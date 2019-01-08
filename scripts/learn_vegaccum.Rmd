@@ -1,0 +1,171 @@
+---
+title: "learn_vegaccum"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(vegan)
+library(tidyverse)
+```
+
+```{r}
+specaccum
+
+```
+
+
+```{r}
+data(BCI)
+head(BCI)
+
+```
+
+
+
+```{r}
+sp1 <- specaccum(BCI)
+sp2 <- specaccum(BCI, "random")
+sp2
+summary(sp2)
+plot(sp1, ci.type="poly", col="blue", lwd=2, ci.lty=0, ci.col="lightblue")
+boxplot(sp2, col="yellow", add=TRUE, pch="+")
+```
+
+```{r}
+sp.df = data.frame(sites = sp1$sites, exact = sp1$richness, random = sp2$richness)
+
+ggplot(data = sp.df %>% gather(key = method, value = richness, exact, random), 
+       aes(x = sites, y = richness, shape = method))+
+  geom_point()
+```
+
+
+
+```{r}
+methods <- c("exact", "random", "collector", "coleman", "rarefaction")
+
+#write a loop to make speaccum for each of these methods and rbind into a df with sites, method, richness and sd
+
+accum.methods <- data.frame(
+  sites = as.integer(),
+  richness = as.double(),
+  method = as.character()
+)
+
+for(i in methods){
+  sp <- specaccum(BCI, method = i)
+  df <- data.frame(sites = sp$sites, 
+                   richness = sp$richness, 
+                   method = sp$method)
+  accum.methods = rbind(accum.methods, df)
+}
+
+
+```
+
+
+```{r}
+ggplot(data = accum.methods, 
+       aes(x = sites, y = richness, colour = method))+
+  geom_point() +
+  geom_line(data = mod1)
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+## Fit Lomolino model to the exact accumulation
+mod1 <- fitspecaccum(sp1, "lomolino")
+coef(mod1)
+fitted(mod1)
+plot(sp1)
+## Add Lomolino model using argument 'add'
+plot(mod1, add = TRUE, col=2, lwd=2)
+```
+
+```{r}
+mod1.data <- data.frame(sites = mod1$sites, richness = mod1$richness, method = "lomolino")
+
+ggplot(data = accum.methods, 
+       aes(x = sites, y = richness, colour = method))+
+  geom_point() +
+  geom_line(data = mod1.data)
+
+```
+
+
+```{r}
+## Fit Arrhenius models to all random accumulations
+mods <- fitspecaccum(sp2, "arrh")
+plot(mods, col="hotpink")
+boxplot(sp2, col = "yellow", border = "blue", lty=1, cex=0.3, add= TRUE)
+
+```
+
+```{r}
+mods.data <- data.frame(sites = mods$sites, richness = mods$richness, method = "arrhenius")
+
+ggplot(data = accum.methods, 
+       aes(x = sites, y = richness, colour = method))+
+  geom_point() +
+  geom_line(data = rbind(mod1.data, mods.data))
+
+
+```
+
+
+
+```{r}
+## Use nls() methods to the list of models
+sapply(mods$models, AIC)
+```
+
+
+###Package iNEXT
+
+```{r}
+library(iNEXT)
+```
+
+
+
+```{r}
+data("ciliates")
+str(ciliates)
+DataInfo(ciliates)
+data.frame(ciliates$EtoshaPan)
+```
+
+```{r}
+out.raw <- iNEXT(ciliates, datatype="incidence_raw", endpoint=150)
+ggiNEXT(out.raw, type = 1, se = F)
+```
+
+```{r}
+ChaoRichness(x = ciliates, datatype = "incidence_raw")
+```
+
+
+```{r}
+out.raw
+```
+
+```{r}
+out.raw$iNextEst
+```
+
+
+
+
